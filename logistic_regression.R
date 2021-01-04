@@ -632,40 +632,127 @@ predict(win.glm, newdata=data.frame(home_pts=50, away_pts=100), type = "response
 
 # Win proportion against home points - playing against a team with average away points
 
-# obs_data_home_pts <- analysis %>%
-#   group_by(home_pts, result) %>% 
-#   summarise(wins = n(), .groups="drop_last") %>% 
-#   mutate(games_played = sum(wins)) %>% 
-#   mutate(win_proportion = round(wins / sum(wins), 2)) %>%
-#   mutate(win_logit = round(log(wins / (games_played - wins)), 2)) %>%
-#   arrange(home_pts) %>% 
-#   filter(result == "Win") %>%
-#   select(-result)
-# 
-# homepts_val <- seq(from=min(obs_data_home_pts$home_pts), to=max(obs_data_home_pts$home_pts), by=.1)
-# awaypts_val <- mean(analysis$away_pts)
-# 
-# home <- predict(win.glm, newdata=data.frame(reference_points=refpts_val, adverse_points=rep(advpts_val, length(refpts_val)),
-#                                             location=rep("Home", length(refpts_val))), type="response")
-# away <- predict(win.glm, newdata=data.frame(reference_points=refpts_val, adverse_points=rep(advpts_val, length(refpts_val)),
-#                                             location=rep("Away", length(refpts_val))), type="response")
-# 
-# plot(x=obs_data_ref_pts$reference_points, y=obs_data_ref_pts$win_proportion,
-#      xlab="Reference Points (18/19)", ylab="Win Proportion (19/20)",
-#      main="Proportion of Wins (19/20) for the Reference Team by their Previous Season
-#      Points (18/19), given that the Adverse Team had the Average Number of Previous
-#      Season Points - 58.4",
-#      col=c("red", "blue")[obs_data_ref_pts$location])
-# 
-# lines(refpts_val, home, col="blue", type="l", lwd=2, lty=2)
-# lines(refpts_val, away, col="red", type="l", lwd=2, lty=2)
-# 
-# legend('topleft', legend=c("Observed - Home", "Observed - Away", "FItted - Home", "Fitted - Away"), col=c("blue", "red"),
-#        lty=c(NA,NA,2,2), pch=c(1,1,NA,NA), cex=0.8)
+obs_data_home_pts <- analysis %>%
+  group_by(home_pts, result) %>%
+  summarise(wins = n(), .groups="drop_last") %>%
+  mutate(games_played = sum(wins)) %>%
+  mutate(win_proportion = round(wins / sum(wins), 2)) %>%
+  mutate(win_logit = round(log(wins / (games_played - wins)), 2)) %>%
+  arrange(home_pts) %>%
+  filter(result == "Win") %>%
+  select(-result)
+
+homepts_val <- seq(from=min(obs_data_home_pts$home_pts), to=max(obs_data_home_pts$home_pts), by=.1)
+awaypts_val <- mean(analysis$away_pts)
+
+prob <- predict(win.glm, newdata=data.frame(home_pts=homepts_val, 
+                                            away_pts=rep(awaypts_val, length(homepts_val))), type="response")
+
+plot(x=obs_data_home_pts$home_pts, y=obs_data_home_pts$win_proportion,
+     xlab="Home Points (18/19)", ylab="Home Win Proportion (19/20)",
+     main="Proportion of Home Wins (19/20) by the Home Team's Previous Season Points (18/19),
+     given that the Away Team had the Average Number of Previous Season Points - 58.4")
+
+lines(homepts_val, prob, col="blue", type="l", lwd=2, lty=2)
+
+legend('topleft', legend=c("Observed Proportions", "Fitted Probabilities"), col=c("black", "blue"),
+       lty=c(NA,2), pch=c(1,NA), cex=0.8)
+
+# Win proportion against away points - playing against a team with average home points
+
+obs_data_away_pts <- analysis %>%
+  group_by(away_pts, result) %>%
+  summarise(wins = n(), .groups="drop_last") %>%
+  mutate(games_played = sum(wins)) %>%
+  mutate(win_proportion = round(wins / sum(wins), 2)) %>%
+  mutate(win_logit = round(log(wins / (games_played - wins)), 2)) %>%
+  arrange(away_pts) %>%
+  filter(result == "Win") %>%
+  select(-result)
+
+homepts_val <- mean(analysis$home_pts)
+awaypts_val <- seq(from=min(obs_data_away_pts$away_pts), to=max(obs_data_away_pts$away_pts), by=.1)
 
 
+prob <- predict(win.glm, newdata=data.frame(home_pts=rep(homepts_val, length(awaypts_val)),
+                                            away_pts=awaypts_val), type="response")
 
+plot(x=obs_data_away_pts$away_pts, y=obs_data_away_pts$win_proportion,
+     xlab="Away Points (18/19)", ylab="Home Win Proportion (19/20)",
+     main="Proportion of Home Wins (19/20) by the Away Team's Previous Season Points (18/19),
+     given that the Home Team had the Average Number of Previous Season Points - 58.4")
 
+lines(awaypts_val, prob, col="blue", type="l", lwd=2, lty=2)
 
+legend('topright', legend=c("Observed Proportions", "Fitted Probabilities"), col=c("black", "blue"),
+       lty=c(NA,2), pch=c(1,NA), cex=0.8)
 
+# ---------------------------------------------------------------------------------------------------------
+# -------------------------------------- Residual Analysis ------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------
+
+plot(residuals(win.glm) ~ analysis$home_pts, 
+     xlab ="Home Points (18/19)", ylab="Deviance Residuals",
+     main="Deviance Residuals Against Home Points Last Season (18/19)")
+abline(h=0, lty=2)
+
+plot(residuals(win.glm) ~ analysis$away_pts, 
+     xlab ="Away Points (18/19)", ylab="Deviance Residuals",
+     main="Deviance Residuals Against Away Points Last Season (18/19)")
+abline(h=0, lty=2)
+
+plot(win.glm, which=5)
+
+# Now use Hosmer Lemeshaw to test adequacy
+
+hl <- hoslem.test(analysis$result_bin, fitted(win.glm))
+hl
+
+# ---------------------------------------------------------------------------------------------------------
+# -------------------------------------- Model Calibration ------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------
+
+# Create Vector of Predicted Probabilities
+p <- predict(win.glm,type="response")
+hist(p)
+
+# Bin Predicted Probabilities
+breaks<-seq(0.05, 0.9, by=0.05)
+breaks
+p.categories <- cut(p, breaks)
+p.categories
+table(p.categories)
+
+# Calculate Observed Probabilities
+observed.p <- tapply(analysis$result == "Win", p.categories, mean)
+predicted.p <- tapply(p, p.categories, mean)
+plot(observed.p, predicted.p, xlim = c(0, 1), ylim = c(0, 1),
+     main="Calibration Plot", xlab="Observed Probabilities", ylab="Predicted Probabilities")
+abline(0, 1, lty = 2)
+
+# ---------------------------------------------------------------------------------------------------------
+# -------------------------------------- Multicolinearity  ------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------
+
+vif(win.glm)
+
+# The results suggest that there is no noticeable evidence of multicolinearity present. Any effect 
+# mulitcolinearity would have on the model, would be very small indeed. 
+
+# ---------------------------------------------------------------------------------------------------------
+# -------------------------------------- Classification Table  --------------------------------------------
+# ---------------------------------------------------------------------------------------------------------
+
+class_prediction <- factor(ifelse(fitted(win.glm) > 0.41, "Win", "Loss/Draw"), levels=c("Loss/Draw", "Win"))
+
+confusionMatrix(data=class_prediction, reference=analysis$result, positive="Win")
+
+# The overall accuracy of the logistic regression model is a measure of the fit of the model. This is 0.6526,
+# which means that the model is estimated to give an accurate prediction 65% of the time.
+
+# The sensitivity is the proportion of observed wins that are correctly classified as a win by the model. This
+# is 0.6726, telling us that the model correctly estimates a win 67% of the time.
+
+# The specificity is the proportion of Loss/Draws that are correctly classified as a Loss/Draw. This is 
+# 0.6195, indicating the model correctly estimates a Loss/Daw 62% of the time. 
 
