@@ -4,8 +4,9 @@
 
 setwd("C:/Users/natha/OneDrive - Coventry University/University/University Year 3/331MP Project/Analysis")
 
-#install.packages("kableExtra")
-#install.packages("caret", dependencies = TRUE)
+# install.packages("kableExtra")
+# install.packages("caret", dependencies = TRUE)
+# install.packages("OneR")
 
 library(readr)
 library(dplyr)
@@ -14,7 +15,9 @@ library(kableExtra)
 library(ggplot2)
 library(car)
 library(caret)
+library(OneR)
 library(ResourceSelection)
+library(pROC)
 
 # ---------------------------------------------------------------------------------------------------------
 # -------------------------------------------- Data Load --------------------------------------------------
@@ -590,7 +593,6 @@ anova(win.glm_8, win.glm_12, test="Chisq")
 # P Value > 0.05 so conclude model 8 is better than model with interaction.
 
 # Hence, model 8 is the best model
-
 win.glm <- glm(result ~ home_pts + away_pts, data=analysis, family = "binomial")
 summary(win.glm)
 
@@ -713,13 +715,11 @@ hl
 # ---------------------------------------------------------------------------------------------------------
 
 # Create Vector of Predicted Probabilities
-p <- predict(win.glm,type="response")
+p <- predict(win.glm, type="response")
 hist(p)
 
 # Bin Predicted Probabilities
-breaks<-seq(0.05, 0.9, by=0.05)
-breaks
-p.categories <- cut(p, breaks)
+p.categories <- bin(p, nbins=10, method="content")
 p.categories
 table(p.categories)
 
@@ -740,19 +740,49 @@ vif(win.glm)
 # mulitcolinearity would have on the model, would be very small indeed. 
 
 # ---------------------------------------------------------------------------------------------------------
+# --------------------------------------------- ROC Plot  -------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------
+
+# ROC Creation
+p = predict(win.glm, newdata = analysis, type = "response")
+roc = roc(analysis$result ~ p)
+
+# AUC value
+as.numeric(test_roc$auc)
+
+# Best threshold
+best <- coords(roc, "best", "threshold", transpose = FALSE)
+best
+
+# ROC Plot
+plot(1, type="n", xlab="Specificity", ylab="Sensitivity", xlim=c(1, 0), ylim=c(0, 1),
+     main="Receiver Operating Characteristic - ROC")
+plot.roc(roc, add=TRUE, print.thres="best", print.thres.col="blue", print.auc=TRUE, identity=TRUE)
+
+# TPR vs TNR
+matplot(data.frame(roc$sensitivities, roc$specificities),
+        x = roc$thresholds, type='l', xlab = 'Threshold', ylab='Rate',
+        main="Distrubution of TPR and TNR")
+legend('bottomright', legend=c('TPR', 'TNR'), lty=1:2, col=1:2)
+
+
+# A ROC curve plots the specificity (false alarm rate) against the ensititvity (hit rate)
+# for a range of thresholds. The area under the curve is a measure of a forecast's accuracy. 
+# AUC of 1 would indicate a perfect model. A measure of 0.5 would indicate a random forecast.
+
+# ---------------------------------------------------------------------------------------------------------
 # -------------------------------------- Classification Table  --------------------------------------------
 # ---------------------------------------------------------------------------------------------------------
 
-class_prediction <- factor(ifelse(fitted(win.glm) > 0.41, "Win", "Loss/Draw"), levels=c("Loss/Draw", "Win"))
+class_prediction <- factor(ifelse(fitted(win.glm) > best[[1]], "Win", "Loss/Draw"), levels=c("Loss/Draw", "Win"))
 
 confusionMatrix(data=class_prediction, reference=analysis$result, positive="Win")
 
-# The overall accuracy of the logistic regression model is a measure of the fit of the model. This is 0.6526,
-# which means that the model is estimated to give an accurate prediction 65% of the time.
+# The overall accuracy of the logistic regression model is a measure of the fit of the model. This is 0.6691,
+# which means that the model is estimated to give an accurate prediction 67% of the time.
 
 # The sensitivity is the proportion of observed wins that are correctly classified as a win by the model. This
-# is 0.6726, telling us that the model correctly estimates a win 67% of the time.
+# is 0.7025, telling us that the model correctly estimates a win 70% of the time.
 
 # The specificity is the proportion of Loss/Draws that are correctly classified as a Loss/Draw. This is 
-# 0.6195, indicating the model correctly estimates a Loss/Daw 62% of the time. 
-
+# 0.6424, indicating the model correctly estimates a Loss/Daw 64% of the time. 
