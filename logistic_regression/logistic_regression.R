@@ -556,12 +556,12 @@ t_wins_distance <- wins_distance %>%
 
 t_wins_distance
 
-# Proportion (Wins) against COVID --------------------------------------------------------------------
+# Proportion (Wins) against Distance --------------------------------------------------------------------
 
 barplot(win_proportion ~ distance, data = wins_distance, main="Proportion of home Wins (19/20) by distance travelled by away team",
         xlab="Distance", ylab="Win Proportion (19/20)")
 
-# Logit (Wins) against COVID --------------------------------------------------------------------
+# Logit (Wins) against Distance --------------------------------------------------------------------
 
 barplot(win_logit ~ distance, data = wins_distance, main="Logit home Wins (19/20) by distance travelled by away team",
         xlab="Distance", ylab="Win Logit (19/20)")
@@ -571,7 +571,7 @@ barplot(win_logit ~ distance, data = wins_distance, main="Logit home Wins (19/20
 # ---------------------------------------------------------------------------------------------------------
 
 # Testing for correaltions between measures of strength 
-correlations <- round(cor(select(analysis, result_bin, Pos=home_pos, Pts=home_pts, GD=home_gd, 
+correlations <- round(cor(select(analysis, Pos=home_pos, Pts=home_pts, GD=home_gd, 
                                  GF=home_goalsfor, GA=home_goalsagainst)), 2)
 correlations
 corrplot(correlations, method="circle", type="lower", tl.cex = 1)
@@ -1018,15 +1018,14 @@ best
 
 # ROC Plot
 plot(1, type="n", xlab="Specificity", ylab="Sensitivity", xlim=c(1, 0), ylim=c(0, 1),
-     main="Receiver Operating Characteristic - ROC")
-plot.roc(roc, add=TRUE, print.thres="best", print.thres.col="blue", print.auc=TRUE, identity=TRUE)
+     main="Receiver Operating Characteristic - ROC", cex.main=0.95)
+plot.roc(roc, add=TRUE, print.thres="best", print.thres.col="blue", print.auc=FALSE, identity=TRUE)
 
 # TPR vs TNR
 matplot(data.frame(roc$sensitivities, roc$specificities),
         x = roc$thresholds, type='l', xlab = 'Threshold', ylab='Rate',
         main="Distribution of TPR and TNR")
 legend('bottomright', legend=c('TPR', 'TNR'), lty=1:2, col=1:2)
-
 
 # A ROC curve plots the specificity (false alarm rate) against the ensititvity (hit rate)
 # for a range of thresholds. The area under the curve is a measure of a forecast's accuracy. 
