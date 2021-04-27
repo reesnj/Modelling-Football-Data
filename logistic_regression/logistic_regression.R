@@ -822,20 +822,23 @@ legend('topright', legend=c("Observed - Short Distance", "Observed - Long Distan
 # -------------------------------------- Residual Analysis ------------------------------------------------
 # ---------------------------------------------------------------------------------------------------------
 
+# Plot residuals
+residualPlots(win.glm)
+
 par(mfrow=c(2,2))
 
-plot(residuals(win.glm) ~ analysis$home_pts, 
-     xlab ="Home Points (18/19)", ylab="Deviance Residuals",
-     main="Deviance residuals against home points")
+plot(residuals(win.glm, type="pearson") ~ analysis$home_pts, 
+     xlab ="Home Points (18/19)", ylab="Std. Pearson resid.",
+     main="Pearson residuals against home points")
 abline(h=0, lty=2)
 
-plot(residuals(win.glm) ~ analysis$away_pts, 
-     xlab ="Away Points (18/19)", ylab="Deviance Residuals",
-     main="Deviance residuals against away points")
+plot(residuals(win.glm, type="pearson") ~ analysis$away_pts, 
+     xlab ="Away Points (18/19)", ylab="Std. Pearson resid.",
+     main="Pearson residuals against away points")
 abline(h=0, lty=2)
 
-plot.default(residuals(win.glm) ~ factor(analysis$distance, levels=c("Short", "Long")),
-     main = "Deviance residuals against Distance", xlab="Distance", ylab = "Deviance Residuals",
+plot.default(residuals(win.glm, type="pearson") ~ factor(analysis$distance, levels=c("Short", "Long")),
+     main = "Pearson residuals against distance", xlab="Distance", ylab = "Std. Pearson resid.",
      xlim = c(0.5, 2.5), xaxt="n")
 axis(1, at=1:2, labels=c("Short", "Long"))
 abline(h=0, lty=2)

@@ -517,34 +517,35 @@ ggarrange(plot1, plot2, plot3, plot4)
 # --------------------------------- Cox Proportional Hazards  ------------------------------------------
 # ------------------------------------------------------------------------------------------------------
 
+cox1 <- coxph(Surv(goaltime, cens) ~ ref_pts + adv_pts + loc + covid, data = analysis)
+summary(cox1)
+# Covid not signifcant- remove
+
+cox2 <- coxph(Surv(goaltime, cens) ~ ref_pts + adv_pts + loc, data = analysis)
+summary(cox2)
+# All variables signifcant (or borderline)
+
+# Final Model
 cox <- coxph(Surv(goaltime, cens) ~ ref_pts + adv_pts + loc, data = analysis)
 summary(cox)
 
-# The bottom table provides Hazard ratios
-# HR ref_ability = 0.59 ~ 0.6
-# Non top six teams score approximately 0.6 times the rate per unit time as top six teams.
-# HR_adv_ability = 1.23
-# A team playing against a non top 6 team scores approximately 1.2 times the rate per unit time
-# compared to a team playing against a top 6 team.
-# HR_locHome = 1.21
-# A team playing at home scores approximately 1.2 times the rate per unit time as a team playing away.
+# Hazard ratios
+# For every additional 10 points the reference team accumulated in the previous season,
+#    the risk of the reference team scoring their first goal increases by 16.3%.
+# For every additional 10 points the adverse team obtained in the previous season, 
+#    the risk of the reference team scoring their first goal decreases by 6.4%
+# The risk of the reference team scoring their first goal is 21.7% higher when they 
+#     are playing at home rather than away 
 
-# Adjusted survial curves
-ggadjustedcurves(cox, variable="ref_pts", title="Adjusted Survival Curves of Time to First Goal - Split by Reference team ability", 
-                 data=analysis, xlab="Time (Minutes)")
-ggadjustedcurves(cox, variable="adv_pts", title="Adjusted Survival Curves of Time to First Goal - Split by Adverse team ability", 
-                 data=analysis, xlab="Time (Minutes)")
-ggadjustedcurves(cox, variable="loc", title="Adjusted Survival Curves of Time to First Goal - Split by Location (Home/Away)", 
-                 data=analysis, xlab="Time (Minutes)")
 
 # Testing proportional hazards
-
 cz <- cox.zph(cox)
 print(cz)
 # We do not reject the null. There is not enough evidence to suggest that propoirtonal hazard assumption
 # has been violated.
 plot(cz)
 # Deviation from a zero-slope line is evidence that the proportional hazards assumption is violated
+
 
 
 # Illustrating data manipulation with one match --------------------------------------------------------------
