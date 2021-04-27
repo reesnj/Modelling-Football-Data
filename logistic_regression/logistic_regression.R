@@ -24,11 +24,10 @@ library(ResourceSelection)
 library(pROC)
 
 # ---------------------------------------------------------------------------------------------------------
-# ------------------------------------ Data Load - Training Data ------------------------------------------
+# ------------------------------------ Data Load (19/20) - Training Data ----------------------------------
 # ---------------------------------------------------------------------------------------------------------
 
 # Results from 19/20 season
-
 results1920 <- read_csv("results_19_20.csv") %>%
   # Add Covid flag
   mutate(date=dmy(Date)) %>% 
@@ -39,7 +38,6 @@ results1920 <- read_csv("results_19_20.csv") %>%
            !away %in% c("Aston Villa", "Norwich", "Sheffield United"))
 
 # Standings from 18/19 season
-
 table1819 <- read_csv("table_18_19.csv") %>% 
   # Remove Relagated Teams
   filter(Position <= 17) %>% 
@@ -95,27 +93,9 @@ analysis$distance <- factor(analysis$distance, levels = c("Short", "Long"))
 
 # ----------------------------------------- Results Breakdown ---------------------------------------------
 
-# Frequencies of Result for home team - Win/Draw/Loss
-
-t_wins <- results1920 %>%
-  mutate(result = case_when(
-    result == "H" ~ "Win",
-    result == "D" ~ "Draw",
-    result == "A" ~ "Loss",
-    TRUE ~ ""
-  )) %>%
-  group_by(result) %>% 
-  summarise(n = n(), .groups="drop") %>% 
-  mutate(win_proportion = round(n / sum(n), 2)) %>% 
-  arrange(desc(n)) %>% 
-  kbl(caption = "Distribution of results for the home team (19/20)", 
-      col.names=c("Result", "Count", "Proportion")) %>% 
-  kable_classic(full_width = F)
-
-t_wins
+#### Table 1 ###
 
 # Binary frequencies of result for home team - Win/Otherwise
-
 t_wins_bin <- analysis %>%
   group_by(result) %>% 
   summarise(n = n(), .groups="drop") %>% 
@@ -123,87 +103,11 @@ t_wins_bin <- analysis %>%
   arrange(desc(result)) %>% 
   kbl(caption = "Distribution of results (binary) for the home team (19/20)", col.names=c("Result", "Count", "Proportion")) %>% 
   kable_classic(full_width = F)
-
 t_wins_bin
-
-# ----------------------------------------- Home Position ---------------------------------------------
-
-# Frequencies of Result - By Home Position
-
-wins_home_pos <- analysis %>%
-  group_by(home_pos, result) %>% 
-  summarise(wins = n(), .groups="drop_last") %>% 
-  mutate(games_played = sum(wins)) %>% 
-  mutate(win_proportion = round(wins / sum(wins), 2)) %>%
-  mutate(win_logit = round(log(wins / (games_played - wins)), 2)) %>%
-  filter(result == "Win") %>%
-  select(-result)
-
-t_wins_home_pos <- wins_home_pos %>% 
-  select(home_pos, wins, games_played, win_proportion, win_logit) %>% 
-  kbl(caption = "Number of home wins (19/20) by home team's previous season position (18/19)", 
-      col.names=c("Position", "Wins", "Played", "Proportion", "Logit")) %>% 
-  kable_classic(full_width = F)
-
-t_wins_home_pos
-
-# Proportion (Wins) for home team against Home Position
-
-plot(x=wins_home_pos$home_pos, y=wins_home_pos$win_proportion,
-     xlab="Home Team's Position (18/19)", ylab="Home Win Proportion (19/20)",
-     main="Proportion of home wins (19/20) by home team's previous season position (18/19)")
-
-abline(lm(wins_home_pos$win_proportion ~ wins_home_pos$home_pos))
-
-# Logit (Wins) for home team against Home Position 
-
-plot(x=wins_home_pos$home_pos, y=wins_home_pos$win_logit,
-     xlab="Home Team's Position (18/19)", ylab="Logit (Home Wins 19/20)",
-     main="Logit home wins (19/20) by home team's previous season position (18/19)")
-
-abline(lm(wins_home_pos$win_logit ~ wins_home_pos$home_pos))
-
-# ----------------------------------------- Away Positon ---------------------------------------------
-
-# Frequencies of Result - By away Position
-
-wins_away_pos <- analysis %>%
-  group_by(away_pos, result) %>% 
-  summarise(wins = n(), .groups="drop_last") %>% 
-  mutate(games_played = sum(wins)) %>% 
-  mutate(win_proportion = round(wins / sum(wins), 2)) %>%
-  mutate(win_logit = round(log(wins / (games_played - wins)), 2)) %>%
-  filter(result == "Win") %>%
-  select(-result)
-
-t_wins_away_pos <- wins_away_pos %>% 
-  select(away_pos, wins, games_played, win_proportion, win_logit) %>% 
-  kbl(caption = "Number of home wins (19/20) by away team's previous season position (18/19)", 
-      col.names=c("Position", "Wins", "Played", "Proportion", "Logit")) %>% 
-  kable_classic(full_width = F)
-
-t_wins_away_pos
-
-# Proportion (Wins) for home team against away position
-
-plot(x=wins_away_pos$away_pos, y=wins_away_pos$win_proportion,
-     xlab="Away Team's Position (18/19)", ylab="Home Win Proportion (19/20)",
-     main="Proportion of home wins (19/20) by away team's previous season position (18/19)")
-
-abline(lm(wins_away_pos$win_proportion ~ wins_away_pos$away_pos))
-
-# Logit (Wins) for home team against away Position 
-
-plot(x=wins_away_pos$away_pos, y=wins_away_pos$win_logit,
-     xlab="Away Team's Position (18/19)", ylab="Logit (Home Wins 19/20)",
-     main="Logit home wins (19/20) by away team's previous season position (18/19)")
-
-abline(lm(wins_away_pos$win_logit ~ wins_away_pos$away_pos))
 
 # -------------------------------------- Home Points ---------------------------------------------
 
 # Frequencies of Result - By Home Points
-
 wins_home_pts <- analysis %>%
   group_by(home_pts, result) %>% 
   summarise(wins = n(), .groups="drop_last") %>% 
@@ -219,11 +123,9 @@ t_wins_home_pts <- wins_home_pts %>%
   kbl(caption = "Number of home wins (19/20) by home team's previous season points (18/19)", 
       col.names=c("Points", "Wins", "Played", "Proportion", "Logit")) %>% 
   kable_classic(full_width = F)
-
 t_wins_home_pts
 
 # Proportion (Wins) against Home Points
-
 plot(x=wins_home_pts$home_pts, y=wins_home_pts$win_proportion,
      xlab="Home Team's Points (18/19)", ylab="Home win Proportion (19/20)",
      main="Proportion of home wins (19/20) by home team's previous season points (18/19)")
@@ -231,7 +133,6 @@ plot(x=wins_home_pts$home_pts, y=wins_home_pts$win_proportion,
 abline(lm(wins_home_pts$win_proportion ~ wins_home_pts$home_pts))
 
 # Logit (Wins) against Home Points
-
 plot(x=wins_home_pts$home_pts, y=wins_home_pts$win_logit,
      xlab="Home Team's Points (18/19)", ylab="Logit (Home wins 19/20)",
      main="Logit home wins (19/20) by home team's previous season points (18/19)")
@@ -241,7 +142,6 @@ abline(lm(wins_home_pts$win_logit ~ wins_home_pts$home_pts))
 # -------------------------------------- Away Points ---------------------------------------------
 
 # Frequencies of Result - By Away Points
-
 wins_away_pts <- analysis %>%
   group_by(away_pts, result) %>% 
   summarise(wins = n(), .groups="drop_last") %>% 
@@ -257,11 +157,9 @@ t_wins_away_pts <- wins_away_pts %>%
   kbl(caption = "Number of home wins (19/20) by away team's previous season points (18/19)", 
       col.names=c("Points", "Wins", "Played", "Proportion", "Logit")) %>% 
   kable_classic(full_width = F)
-
 t_wins_away_pts
 
 # Proportion (Wins) against Away Points
-
 plot(x=wins_away_pts$away_pts, y=wins_away_pts$win_proportion,
      xlab="Away Team's Points (18/19)", ylab="Home win Proportion (19/20)",
      main="Proportion of home wins (19/20) by away team's previous season points (18/19)")
@@ -269,276 +167,22 @@ plot(x=wins_away_pts$away_pts, y=wins_away_pts$win_proportion,
 abline(lm(wins_away_pts$win_proportion ~ wins_away_pts$away_pts))
 
 # Logit (Wins) against Home Points
-
 plot(x=wins_away_pts$away_pts, y=wins_away_pts$win_logit,
      xlab="Away Team's Points (18/19)", ylab="Logit (Home wins 19/20)",
      main="Logit home wins (19/20) by away team's previous season points (18/19)")
 
 abline(lm(wins_away_pts$win_logit ~ wins_away_pts$away_pts))
 
-# ------------------------------------- Home Goal Difference -----------------------------------------
-
-# Frequencies of Result - By Home Goal Difference
-
-wins_home_gd <- analysis %>%
-  group_by(home_gd, result) %>% 
-  summarise(wins = n(), .groups="drop_last") %>% 
-  mutate(games_played = sum(wins)) %>% 
-  mutate(win_proportion = round(wins / sum(wins), 2)) %>%
-  mutate(win_logit = round(log(wins / (games_played - wins)), 2)) %>%
-  arrange(home_gd) %>% 
-  filter(result == "Win") %>%
-  select(-result)
-
-t_wins_home_gd <- wins_home_gd %>% 
-  select(home_gd, wins, games_played, win_proportion, win_logit) %>% 
-  kbl(caption = "Number of home wins (19/20) by home team's previous season goal difference (18/19)", 
-      col.names=c("Goal Diff", "Wins", "Played", "Proportion", "Logit")) %>% 
-  kable_classic(full_width = F)
-
-t_wins_home_gd
-
-# Proportion (Wins) against Home Goal Difference
-
-plot(x=wins_home_gd$home_gd, y=wins_home_gd$win_proportion,
-     xlab="Home Team's Goal Diff (18/19)", ylab="Home win Proportion (19/20)",
-     main="Proportion of home wins (19/20) by home team's previous season goal difference (18/19)")
-
-abline(lm(wins_home_gd$win_proportion ~ wins_home_gd$home_gd))
-
-# Logit (Wins) against Home Goal Difference
-
-plot(x=wins_home_gd$home_gd, y=wins_home_gd$win_logit,
-     xlab="Home Team's Goal Diff (18/19)", ylab="Logit (Home wins 19/20)",
-     main="Logit home wins (19/20) by home team's previous season goal difference (18/19)")
-
-abline(lm(wins_home_gd$win_logit ~ wins_home_gd$home_gd))
-
-# ------------------------------------- Away Goal Difference -----------------------------------------
-
-# Frequencies of Result - By Away Goal Difference
-
-wins_away_gd <- analysis %>%
-  group_by(away_gd, result) %>% 
-  summarise(wins = n(), .groups="drop_last") %>% 
-  mutate(games_played = sum(wins)) %>% 
-  mutate(win_proportion = round(wins / sum(wins), 2)) %>%
-  mutate(win_logit = round(log(wins / (games_played - wins)), 2)) %>%
-  arrange(away_gd) %>% 
-  filter(result == "Win") %>%
-  select(-result)
-
-t_wins_away_gd <- wins_away_gd %>% 
-  select(away_gd, wins, games_played, win_proportion, win_logit) %>% 
-  kbl(caption = "Number of home wins (19/20) by away team's previous season goal difference (18/19)", 
-      col.names=c("Goal Diff", "Wins", "Played", "Proportion", "Logit")) %>% 
-  kable_classic(full_width = F)
-
-t_wins_away_gd
-
-# Proportion (Wins) against Away Goal Difference
-
-plot(x=wins_away_gd$away_gd, y=wins_away_gd$win_proportion,
-     xlab="Away Team's Goal Diff (18/19)", ylab="Home win Proportion (19/20)",
-     main="Proportion of home wins (19/20) by away team's previous season goal difference (18/19)")
-
-abline(lm(wins_away_gd$win_proportion ~ wins_away_gd$away_gd))
-
-# Logit (Wins) against Away Goal Difference
-
-plot(x=wins_away_gd$away_gd, y=wins_away_gd$win_logit,
-     xlab="Away Team's Goal Diff (18/19)", ylab="Logit (Home wins 19/20)",
-     main="Logit home wins (19/20) by away team's previous season goal difference (18/19)")
-
-abline(lm(wins_away_gd$win_logit ~ wins_away_gd$away_gd))
-
-# ------------------------------------- Home Goals For -----------------------------------------
-
-# Frequencies of Result - By Home Goals For
-
-wins_home_goalsfor <- analysis %>%
-  group_by(home_goalsfor, result) %>% 
-  summarise(wins = n(), .groups="drop_last") %>% 
-  mutate(games_played = sum(wins)) %>% 
-  mutate(win_proportion = round(wins / sum(wins), 2)) %>%
-  mutate(win_logit = round(log(wins / (games_played - wins)), 2)) %>%
-  arrange(home_goalsfor) %>% 
-  filter(result == "Win") %>%
-  select(-result)
-
-t_wins_home_goalsfor <- wins_home_goalsfor %>% 
-  select(home_goalsfor, wins, games_played, win_proportion, win_logit) %>% 
-  kbl(caption = "Number of home wins (19/20) by home team's previous season goals for (18/19)", 
-      col.names=c("Goals For", "Wins", "Played", "Proportion", "Logit")) %>% 
-  kable_classic(full_width = F)
-
-t_wins_home_goalsfor
-
-# Proportion (Wins) against Home Goals For
-
-plot(x=wins_home_goalsfor$home_goalsfor, y=wins_home_goalsfor$win_proportion,
-     xlab="Home team's goals for (18/19)", ylab="Home win Proportion (19/20)",
-     main="Proportion of home wins (19/20) by home team's previous season goals for (18/19)")
-
-abline(lm(wins_home_goalsfor$win_proportion ~ wins_home_goalsfor$home_goalsfor))
-
-# Logit (Wins) against Home Goals For
-
-plot(x=wins_home_goalsfor$home_goalsfor, y=wins_home_goalsfor$win_logit,
-     xlab="Home team's goals for (18/19)", ylab="Logit (Home wins 19/20)",
-     main="Logit home wins (19/20) by home team's previous season goals for (18/19)")
-
-abline(lm(wins_home_goalsfor$win_logit ~ wins_home_goalsfor$home_goalsfor))
-
-# ------------------------------------- Away Goals For -----------------------------------------
-
-# Frequencies of Result - By Home Goals For
-
-wins_away_goalsfor <- analysis %>%
-  group_by(away_goalsfor, result) %>% 
-  summarise(wins = n(), .groups="drop_last") %>% 
-  mutate(games_played = sum(wins)) %>% 
-  mutate(win_proportion = round(wins / sum(wins), 2)) %>%
-  mutate(win_logit = round(log(wins / (games_played - wins)), 2)) %>%
-  arrange(away_goalsfor) %>% 
-  filter(result == "Win") %>%
-  select(-result)
-
-t_wins_away_goalsfor <- wins_away_goalsfor %>% 
-  select(away_goalsfor, wins, games_played, win_proportion, win_logit) %>% 
-  kbl(caption = "Number of home wins (19/20) by away team's previous season goals for (18/19)", 
-      col.names=c("Goals For", "Wins", "Played", "Proportion", "Logit")) %>% 
-  kable_classic(full_width = F)
-
-t_wins_away_goalsfor
-
-# Proportion (Wins) against Home Goals For
-
-plot(x=wins_away_goalsfor$away_goalsfor, y=wins_away_goalsfor$win_proportion,
-     xlab="Away team's goals for (18/19)", ylab="Home win Proportion (19/20)",
-     main="Proportion of home wins (19/20) by away team's previous season goals for (18/19)")
-
-abline(lm(wins_away_goalsfor$win_proportion ~ wins_away_goalsfor$away_goalsfor))
-
-# Logit (Wins) against Home Goals For
-
-plot(x=wins_away_goalsfor$away_goalsfor, y=wins_away_goalsfor$win_logit,
-     xlab="Away team's goals for (18/19)", ylab="Logit (Home wins 19/20)",
-     main="Logit home wins (19/20) by away team's previous season goals for (18/19)")
-
-abline(lm(wins_away_goalsfor$win_logit ~ wins_away_goalsfor$away_goalsfor))
-
-# ------------------------------------- Home Goals Against -----------------------------------------
-
-# Frequencies of Result - By Home Goals Against
-
-wins_home_goalsagainst <- analysis %>%
-  group_by(home_goalsagainst, result) %>% 
-  summarise(wins = n(), .groups="drop_last") %>% 
-  mutate(games_played = sum(wins)) %>% 
-  mutate(win_proportion = round(wins / sum(wins), 2)) %>%
-  mutate(win_logit = round(log(wins / (games_played - wins)), 2)) %>%
-  arrange(home_goalsagainst) %>% 
-  filter(result == "Win") %>%
-  select(-result)
-
-t_wins_home_goalsagainst <- wins_home_goalsagainst %>% 
-  select(home_goalsagainst, wins, games_played, win_proportion, win_logit) %>% 
-  kbl(caption = "Number of home wins (19/20) by home team's previous season goals against (18/19)", 
-      col.names=c("Goals Against", "Wins", "Played", "Proportion", "Logit")) %>% 
-  kable_classic(full_width = F)
-
-t_wins_home_goalsagainst
-
-# Proportion (Wins) against Home Goals Against
-
-plot(x=wins_home_goalsagainst$home_goalsagainst, y=wins_home_goalsagainst$win_proportion,
-     xlab="Home team's goals against (18/19)", ylab="Home win Proportion (19/20)",
-     main="Proportion of home wins (19/20) by home team's previous season goals against (18/19)")
-
-abline(lm(wins_home_goalsagainst$win_proportion ~ wins_home_goalsagainst$home_goalsagainst))
-
-# Logit (Wins) against Home Goals against
-
-plot(x=wins_home_goalsagainst$home_goalsagainst, y=wins_home_goalsagainst$win_logit,
-     xlab="Home team's goals against (18/19)", ylab="Logit (Home wins 19/20)",
-     main="Logit home wins (19/20) by home team's previous season goals against (18/19)")
-
-abline(lm(wins_home_goalsagainst$win_logit ~ wins_home_goalsagainst$home_goalsagainst))
-
-# ------------------------------------- Away Goals Against -----------------------------------------
-
-# Frequencies of Result - By Home Goals against
-
-wins_away_goalsagainst <- analysis %>%
-  group_by(away_goalsagainst, result) %>% 
-  summarise(wins = n(), .groups="drop_last") %>% 
-  mutate(games_played = sum(wins)) %>% 
-  mutate(win_proportion = round(wins / sum(wins), 2)) %>%
-  mutate(win_logit = round(log(wins / (games_played - wins)), 2)) %>%
-  arrange(away_goalsagainst) %>% 
-  filter(result == "Win") %>%
-  select(-result)
-
-t_wins_away_goalsagainst <- wins_away_goalsagainst %>% 
-  select(away_goalsagainst, wins, games_played, win_proportion, win_logit) %>% 
-  kbl(caption = "Number of home wins (19/20) by away team's previous season goals against (18/19)", 
-      col.names=c("Goals Against", "Wins", "Played", "Proportion", "Logit")) %>% 
-  kable_classic(full_width = F)
-
-t_wins_away_goalsagainst
-
-# Proportion (Wins) against Home Goals against
-
-plot(x=wins_away_goalsagainst$away_goalsagainst, y=wins_away_goalsagainst$win_proportion,
-     xlab="Away team's goals against (18/19)", ylab="Home win Proportion (19/20)",
-     main="Proportion of home wins (19/20) by away team's previous season goals against (18/19)")
-
-abline(lm(wins_away_goalsagainst$win_proportion ~ wins_away_goalsagainst$away_goalsagainst))
-
-# Logit (Wins) against Home Goals against
-
-plot(x=wins_away_goalsagainst$away_goalsagainst, y=wins_away_goalsagainst$win_logit,
-     xlab="Away team's goals against (18/19)", ylab="Logit (Home wins 19/20)",
-     main="Logit home wins (19/20) by away team's previous season goals against (18/19)")
-
-abline(lm(wins_away_goalsagainst$win_logit ~ wins_away_goalsagainst$away_goalsagainst))
-
-# ---------------------------------------- COVID ----------------------------------------------------
-
-# Frequencies of Result - By COVID ----------------------------------------------------------------
-
-wins_covid <- analysis %>%
-  group_by(COVID, result) %>% 
-  summarise(wins = n(), .groups="drop_last") %>% 
-  mutate(games_played = sum(wins)) %>% 
-  mutate(win_proportion = round(wins / sum(wins), 2)) %>% 
-  mutate(win_logit = round(log(wins / (games_played - wins)), 2)) %>%
-  filter(result == "Win") %>%
-  select(-result)
-
-t_wins_covid <- wins_covid %>% 
-  select(COVID, wins, games_played, win_proportion, win_logit) %>% 
-  kbl(caption = "Number of home wins (19/20) by COVID-19 stoppage in season", 
-      col.names=c("COVID", "Wins", "Played", "Proportion", "Logit")) %>% 
-  kable_classic(full_width = F)
-
-t_wins_covid
-
-# Proportion (Wins) against COVID --------------------------------------------------------------------
-
-barplot(win_proportion ~ COVID, data = wins_covid, main="Proportion of home Wins (19/20) by COVID-19 stoppage in season",
-        xlab="COVID Lockdown", ylab="Win Proportion (19/20)")
-
-# Logit (Wins) against COVID --------------------------------------------------------------------
-
-barplot(win_logit ~ COVID, data = wins_covid, main="Logit home Wins (19/20) by COVID-19 stoppage in season",
-        xlab="COVID Lockdown", ylab="Win Logit (19/20)")
-
 # ---------------------------------------- Distance ----------------------------------------------------
 
-# Frequencies of Result - By Distance ----------------------------------------------------------------
+#### Table 2 ###
 
+# Fequencies
+table(analysis$distance)
+# Proportions
+round(table(analysis$distance)/272*100, 1)
+
+# Frequencies of Result - By Distance
 wins_distance <- analysis %>%
   group_by(distance, result) %>% 
   summarise(wins = n(), .groups="drop_last") %>% 
@@ -553,18 +197,35 @@ t_wins_distance <- wins_distance %>%
   kbl(caption = "Number of home wins (19/20) by distance travelled by away team", 
       col.names=c("Distance", "Wins", "Played", "Proportion", "Logit")) %>% 
   kable_classic(full_width = F)
-
 t_wins_distance
 
-# Proportion (Wins) against Distance --------------------------------------------------------------------
+# ---------------------------------------- COVID ----------------------------------------------------
 
-barplot(win_proportion ~ distance, data = wins_distance, main="Proportion of home Wins (19/20) by distance travelled by away team",
-        xlab="Distance", ylab="Win Proportion (19/20)")
+#### Table 3 ###
 
-# Logit (Wins) against Distance --------------------------------------------------------------------
+# Fequencies
+table(analysis$COVID)
+# Proportions
+round(table(analysis$COVID)/272*100, 1)
 
-barplot(win_logit ~ distance, data = wins_distance, main="Logit home Wins (19/20) by distance travelled by away team",
-        xlab="Distance", ylab="Win Logit (19/20)")
+### Table 8 ###
+
+# Frequencies of Result - By COVID
+wins_covid <- analysis %>%
+  group_by(COVID, result) %>% 
+  summarise(wins = n(), .groups="drop_last") %>% 
+  mutate(games_played = sum(wins)) %>% 
+  mutate(win_proportion = round(wins / sum(wins), 2)) %>% 
+  mutate(win_logit = round(log(wins / (games_played - wins)), 2)) %>%
+  filter(result == "Win") %>%
+  select(-result)
+
+t_wins_covid <- wins_covid %>% 
+  select(COVID, wins, games_played, win_proportion, win_logit) %>% 
+  kbl(caption = "Number of home wins (19/20) by COVID-19 stoppage in season", 
+      col.names=c("COVID", "Wins", "Played", "Proportion", "Logit")) %>% 
+  kable_classic(full_width = F)
+t_wins_covid
 
 # ---------------------------------------------------------------------------------------------------------
 # ------------------------------------------- Measure of Strength -----------------------------------------
@@ -574,12 +235,9 @@ barplot(win_logit ~ distance, data = wins_distance, main="Logit home Wins (19/20
 correlations <- round(cor(select(analysis, Pos=home_pos, Pts=home_pts, GD=home_gd, 
                                  GF=home_goalsfor, GA=home_goalsagainst)), 2)
 correlations
-corrplot(correlations, method="circle", type="lower", tl.cex = 1)
-mtext("Correlation plot of final league statistics (18/19)", at=3, line=2.5, cex=1.2)
 
-# Clearly, these measures of strength are hihgly correlated so we can not use all of them in our model. So, we must now decide
-# which measure of strength is the most predctive; standings, points, goal difference, goals for, goals against, goals for + 
-# goals against. We do this by fitting the models and choosing the model with the lowest AIC.
+# Fit a model with each different statistic as the measure of ability and choose
+# the model with the lowest AIC.
 
 win.glm_1 <- glm(result ~ home_pos + away_pos, data=analysis, family = "binomial")
 summary(win.glm_1)
@@ -669,7 +327,7 @@ anova(win.glm_9, win.glm_13, test="Chisq")
 
 # Hence, model 13 is  our new best model.
 
-# Four variable model
+# Four variable model - ### Table 6 ###
 
 win.glm_14 <- glm(result ~ home_pts + away_pts + distance + COVID, data=analysis, family = "binomial")
 summary(win.glm_14)
@@ -697,7 +355,8 @@ summary(win.glm_17)
 anova(win.glm_13, win.glm_17, test="Chisq")
 # No improvement
 
-# Hence, model 13 is the best model
+# Hence, model 13 is the best model - ### Table 7 ###
+
 win.glm <- glm(result ~ home_pts + away_pts + distance, data=analysis, family = "binomial")
 summary(win.glm)
 
@@ -707,33 +366,8 @@ summary(win.glm)
 
 # Log(Odds Of Home Win) = -2.471221 + 0.046378(home_pts) - 0.016334(away_pts) + 0.663690(distanceLong)
 
-# All P Values are less than 0.05 which tells us there is evidence that home points, away points and distance
-# are significant predicttors of the home team winnng.
-
 exp(coef(win.glm))
 exp(confint(win.glm))
-
-# Odds Ratio for home points:
-# For a match against the same away team (same away points and distance), for every 1 point more
-# the home team had in the previous season, the odds of the home team winning is 4.7% higher.
-# We can see the 95% CI for odds ratio us (1.031, 1.066) which does not include 1 so we can be 95% sure that 
-# this is a significant predictor of the home team winning.
-# For a match against the same away team (same away points and distance), for every 10 point more
-# the home team had in the previous season, the odds of the home team winning is 59.0% higher.
-
-# Odds Ratio for away points:
-# For a match against the same home team (same home points and distance), for every 1 point 
-# more the away team had in the previous season, the odds of the home team winning is 1.6% lower.
-# We can see the 95% CI for odds ratio us (0.969, 0.998) which does not include 1 so we can be 95% sure that 
-# this is a significant predictor of the home team winning.
-# For a match against the same home team (same home points and distance), for every 10 point 
-# more the away team had in the previous season, the odds of the home team winning is 15.1% lower.
-
-# Odds Ratio for distance:
-# If the respective strengths of the home and away team stay contant, the odds of the home team winning is 
-# 94.2% higher if the away team has travelled a long distance compared to a short distance.
-# We can see the 95% CI for odds ratio us (1.061, 3.646) which does not include 1 so we can be 95% sure that 
-# this is a significant predictor of the home team winning.
 
 # ---------------------------------------------------------------------------------------------------------
 # -------------------------------------- Predictions - ----------------------------------------------------
@@ -741,8 +375,6 @@ exp(confint(win.glm))
 
 predict(win.glm, newdata=data.frame(home_pts=100, away_pts=50, distance="Long"), type = "response")
 predict(win.glm, newdata=data.frame(home_pts=100, away_pts=50, distance="Short"), type = "response")
-predict(win.glm, newdata=data.frame(home_pts=50, away_pts=50, distance="Long"), type = "response")
-predict(win.glm, newdata=data.frame(home_pts=50, away_pts=50, distance="Short"), type = "response")
 predict(win.glm, newdata=data.frame(home_pts=50, away_pts=100, distance="Long"), type = "response")
 predict(win.glm, newdata=data.frame(home_pts=50, away_pts=100, distance="Short"), type = "response")
 
@@ -822,8 +454,7 @@ legend('topright', legend=c("Observed - Short Distance", "Observed - Long Distan
 # -------------------------------------- Residual Analysis ------------------------------------------------
 # ---------------------------------------------------------------------------------------------------------
 
-# Plot residuals
-residualPlots(win.glm)
+### Figure 1 ###
 
 par(mfrow=c(2,2))
 
@@ -846,14 +477,17 @@ abline(h=0, lty=2)
 plot(win.glm, which=5, main="Pearson residuals against Leverage", caption="")
 
 par(mfrow=c(1,1))
-# Now use Hosmer Lemeshaw to test adequacy
 
+### Table 9 ###
+# Hosmer Lemeshaw to test adequacy
 hl <- hoslem.test(analysis$result_bin, fitted(win.glm))
 hl
 
 # ---------------------------------------------------------------------------------------------------------
 # -------------------------------------- Model Calibration ------------------------------------------------
 # ---------------------------------------------------------------------------------------------------------
+
+### Figure 2 ###
 
 # Create Vector of Predicted Probabilities
 p <- predict(win.glm, type="response")
@@ -876,74 +510,14 @@ abline(0, 1, lty = 2)
 # ---------------------------------------------------------------------------------------------------------
 
 vif(win.glm)
-
-# The results suggest that there is no noticeable evidence of multicolinearity present. Any effect 
-# mulitcolinearity would have on the model, would be very small indeed. 
-
-# ---------------------------------------------------------------------------------------------------------
-# --------------------------------------- ROC Plot - Training  --------------------------------------------
-# ---------------------------------------------------------------------------------------------------------
-
-# ROC Creation
-p = predict(win.glm, newdata = analysis, type = "response")
-roc = roc(analysis$result ~ p)
-
-# AUC value
-as.numeric(roc$auc)
-
-# Best threshold
-best <- coords(roc, "best", "threshold", transpose = FALSE)
-best
-
-# ROC Plot
-plot(1, type="n", xlab="Specificity", ylab="Sensitivity", xlim=c(1, 0), ylim=c(0, 1),
-     main="Receiver Operating Characteristic - ROC")
-plot.roc(roc, add=TRUE, print.thres="best", print.thres.col="blue", print.auc=TRUE, identity=TRUE)
-
-# TPR vs TNR
-matplot(data.frame(roc$sensitivities, roc$specificities),
-        x = roc$thresholds, type='l', xlab = 'Threshold', ylab='Rate',
-        main="Distribution of TPR and TNR")
-legend('bottomright', legend=c('TPR', 'TNR'), lty=1:2, col=1:2)
-
-
-# A ROC curve plots the specificity (false alarm rate) against the ensititvity (hit rate)
-# for a range of thresholds. The area under the curve is a measure of a forecast's accuracy. 
-# AUC of 1 would indicate a perfect model. A measure of 0.5 would indicate a random forecast.
-
-# ---------------------------------------------------------------------------------------------------------
-# --------------------------------- Classification Table - Training  --------------------------------------
-# ---------------------------------------------------------------------------------------------------------
-
-class_prediction <- factor(ifelse(fitted(win.glm) > best[[1]], "Win", "Loss/Draw"), levels=c("Loss/Draw", "Win"))
-
-confusionMatrix(data=class_prediction, reference=analysis$result, positive="Win")
-
-# The overall accuracy of the logistic regression model is a measure of the fit of the model. This is 0.6912,
-# which means that the model is estimated to give an accurate prediction 69% of the time.
-
-# The sensitivity is the proportion of observed wins that are correctly classified as a win by the model. This
-# is 0.6860, telling us that the model correctly estimates a win 68.6% of the time.
-
-# The specificity is the proportion of Loss/Draws that are correctly classified as a Loss/Draw. This is 
-# 0.6954, indicating the model correctly estimates a Loss/Daw 69.5% of the time. 
-
-
-
-
-
-
-
-
-
+# The results suggest that there is no noticeable evidence of multicolinearity present.
 
 
 # ---------------------------------------------------------------------------------------------------------
-# ------------------------------------ Data Load - Testing Data -------------------------------------------
+# ------------------------------------ Data Load (20/21) - Testing Data -----------------------------------
 # ---------------------------------------------------------------------------------------------------------
 
 # Results from 20/21 season
-
 results2021 <- read_csv("results_20_21.csv") %>%
   # Add Covid flag
   mutate(date=dmy(Date)) %>% 
@@ -954,7 +528,6 @@ results2021 <- read_csv("results_20_21.csv") %>%
            !away %in% c("Leeds", "West Brom", "Fulham"))
 
 # Standings from 19/20 season
-
 table1920 <- read_csv("table_19_20.csv") %>% 
   # Remove Relagated Teams
   filter(Position <= 17) %>% 
@@ -1008,6 +581,8 @@ testing$distance <- factor(testing$distance, levels = c("Short", "Long"))
 # ------------------------------------- ROC Plot - Testing Data   ----------------------------------------
 # ---------------------------------------------------------------------------------------------------------
 
+### Figure 3 ###
+
 # ROC Creation
 p = predict(win.glm, newdata = testing, type = "response")
 roc = roc(testing$result ~ p)
@@ -1030,24 +605,14 @@ matplot(data.frame(roc$sensitivities, roc$specificities),
         main="Distribution of TPR and TNR")
 legend('bottomright', legend=c('TPR', 'TNR'), lty=1:2, col=1:2)
 
-# A ROC curve plots the specificity (false alarm rate) against the ensititvity (hit rate)
-# for a range of thresholds. The area under the curve is a measure of a forecast's accuracy. 
-# AUC of 1 would indicate a perfect model. A measure of 0.5 would indicate a random forecast.
-
 # ---------------------------------------------------------------------------------------------------------
 # ------------------------------- Classification Table - Testing Data   ----------------------------------
 # ---------------------------------------------------------------------------------------------------------
+
+### Table 10 ###
 
 p = predict(win.glm, newdata = testing, type = "response")
 class_prediction <- factor(ifelse(p > best[[1]], "Win", "Loss/Draw"), levels=c("Loss/Draw", "Win"))
 
 confusionMatrix(data=class_prediction, reference=testing$result, positive="Win")
 
-# The overall accuracy of the logistic regression model is a measure of the fit of the model. This is 0.6912,
-# which means that the model is estimated to give an accurate prediction 69% of the time.
-
-# The sensitivity is the proportion of observed wins that are correctly classified as a win by the model. This
-# is 0.6860, telling us that the model correctly estimates a win 68.6% of the time.
-
-# The specificity is the proportion of Loss/Draws that are correctly classified as a Loss/Draw. This is 
-# 0.6954, indicating the model correctly estimates a Loss/Daw 69.5% of the time. 
