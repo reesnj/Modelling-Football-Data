@@ -27,10 +27,7 @@ goaltimes1920 <- read_csv("goaltimes_19_20.csv") %>%
   # Add Covid flag
   mutate(date=dmy(Date)) %>% 
   mutate(COVID = ifelse(date > as.Date("2020-03-13"), "Post", "Pre")) %>%
-  select(home=HomeTeam, away=AwayTeam, firsthomegoal=FHG, firstawaygoal=FAG, COVID, result=FTR) %>%
-  # Remove newly Promoted Teams
-  filter(!home %in% c("Aston Villa", "Norwich", "Sheffield United") &
-           !away %in% c("Aston Villa", "Norwich", "Sheffield United"))
+  select(home=HomeTeam, away=AwayTeam, firsthomegoal=FHG, firstawaygoal=FAG, COVID, result=FTR)
 
 # Standings from 18/19 season
 table1819 <- read_csv("table_18_19.csv") %>% 
@@ -59,7 +56,10 @@ analysis <- rbind(
   left_join(select(table1819, team, adv_pos=position, adv_pts=points), 
             by=c("adv"="team")) %>% 
   mutate(ref_ability = ifelse(ref_pos<=6, "Top 6", "Not Top 6")) %>% 
-  mutate(adv_ability = ifelse(adv_pos<=6, "Top 6", "Not Top 6"))
+  mutate(adv_ability = ifelse(adv_pos<=6, "Top 6", "Not Top 6")) %>% 
+  # Remove newly Promoted Teams
+  filter(!ref %in% c("Aston Villa", "Norwich", "Sheffield United") &
+           !adv %in% c("Aston Villa", "Norwich", "Sheffield United"))
 
 analysis$covid <- factor(analysis$covid, levels = c("Pre", "Post"))
 analysis$loc <- factor(analysis$loc, levels = c("Away", "Home"))
@@ -73,7 +73,7 @@ analysis$adv_ability <- factor(analysis$adv_ability, levels = c("Not Top 6", "To
 ### Table 11/12 ####
 
 # Illustrating data manipulation with one match
-singlematch <- select(goaltimes1920, -COVID, -result)[8,]
+singlematch <- select(goaltimes1920, -COVID, -result)[11,]
 singlematch_transformed <- rbind(
   data.frame(ref = singlematch$home,
              adv = singlematch$away,
@@ -88,8 +88,10 @@ singlematch
 singlematch_transformed
 
 ### Figure 4 ###
+
 structure <- select(analysis, Reference=ref, Adverse=adv, Location=loc, Covid=covid, Ref_Points=ref_pts, Ref_Ability=ref_ability,
                     Adv_Points=adv_pts, Adv_Ability=adv_ability, Censored=cens, Goal_Time=goaltime)[c(8, 310),]
+structure
 
 ### Table 13 ###
 
@@ -340,11 +342,12 @@ ConvertWeibull(weibull_final, conf.level = 0.95)
 # Plots to check PH and Weibull assumption -------------------------------------------------------------------------------------
 
 ### FIgure 15 ###
+
 # 1) All observations
 haz <- data.frame(time=km_fit$time, logtime=log(km_fit$time),
                           cumhaz=km_fit$cumhaz, logcumhaz=log(km_fit$cumhaz))
 plot1 <- ggplot(data=haz, aes(x=logtime, y=logcumhaz)) +
-  ggtitle("Log(Cumulative Hazard) versus Log(Time)") +
+  ggtitle("Log(Cumulative Hazard) versus Log(Time) - All Observations") +
   xlab("Log(Time)") + ylab("Log(Cumulative Hazard)") +
   geom_line() + 
   theme_classic()
@@ -374,6 +377,71 @@ plot4 <- ggplot(data=loc_haz, aes(x=logtime, y=logcumhaz, color=loc)) +
   theme_classic()
 
 ggarrange(plot1, plot2, plot3, plot4)
+
+# Test proportional Hazards assumption for different combinations of team abilities
+
+phtest <- analysis %>%
+  mutate(combination = paste(paste(ref_ability, loc, sep=" ("),
+                             adv_ability, sep=") vs "))
+phtest$combination <- factor(phtest$combination, 
+                             levels = c("Top 6 (Home) vs Top 6", "Top 6 (Away) vs Top 6",
+                                        "Top 6 (Home) vs Not Top 6", "Top 6 (Away) vs Not Top 6",
+                                        "Not Top 6 (Home) vs Top 6", "Not Top 6 (Away) vs Top 6",
+                                        "Not Top 6 (Home) vs Not Top 6", "Not Top 6 (Away) vs Not Top 6"))
+table(phtest$combination)
+
+km_phtest <- survfit(Surv(goaltime, cens) ~ combination, data=phtest)
+
+haz_phtest <- data.frame(time=km_phtest$time, logtime=log(km_phtest$time), 
+                         cumhaz=km_phtest$cumhaz, logcumhaz=log(km_phtest$cumhaz)) %>% 
+  mutate(case=case_when(
+    row_number() < 24 ~ "Top 6 (Home) vs Top 6",
+    row_number() < 45 ~ "Top 6 (Away) vs Top 6",
+    row_number() < 86 ~ "Top 6 (Home) vs Not Top 6",
+    row_number() < 123 ~ "Top 6 (Away) vs Not Top 6",
+    row_number() < 157 ~ "Not Top 6 (Home) vs Top 6",
+    row_number() < 188 ~ "Not Top 6 (Away) vs Top 6",
+    row_number() < 238 ~ "Not Top 6 (Home) vs Not Top 6",
+    row_number() >= 238 ~ "Not Top 6 (Away) vs Not Top 6",
+    TRUE ~ "Missing"
+  )) %>% 
+  mutate(loc=case_when(
+    row_number() < 24 ~ "Home",
+    row_number() < 45 ~ "Away",
+    row_number() < 86 ~ "Home",
+    row_number() < 123 ~ "Away",
+    row_number() < 157 ~ "Home",
+    row_number() < 188 ~ "Away",
+    row_number() < 238 ~ "Home",
+    row_number() >= 238 ~ "Away",
+    TRUE ~ "Missing"
+  ))
+
+haz_phtest_home <- haz_phtest %>% 
+  filter(loc=="Home")
+
+haz_phtest_away <- haz_phtest %>% 
+  filter(loc=="Away")
+
+### Figure 16 ###
+
+# 1) 
+phtest_plot_home <- ggplot(data=haz_phtest_home, aes(x=logtime, y=logcumhaz, color=case)) +
+  ggtitle("Log(Cumulative Hazard) versus Log(Time) - Home matches \n Split by Reference and Adverse Team Ability") +
+  xlab("Log(Time)") + ylab("Log(Cumulative Hazard)") +
+  labs(color = "Ref. Ability vs Adv. Ability") +
+  geom_line() + 
+  theme_classic()
+
+# 2) 
+phtest_plot_away <- ggplot(data=haz_phtest_away, aes(x=logtime, y=logcumhaz, color=case)) +
+  ggtitle("Log(Cumulative Hazard) versus Log(Time) - Away matches \n Split by Reference and Adverse Team Ability") +
+  xlab("Log(Time)") + ylab("Log(Cumulative Hazard)") +
+  labs(color = "Ref. Ability vs Adv. Ability") +
+  geom_line() + 
+  theme_classic()
+
+ggarrange(phtest_plot_home, phtest_plot_away, ncol=2, nrow=1)
 
 # ------------------------------------------------------------------------------------------------------
 # --------------------------------- Cox Proportional Hazards  ------------------------------------------
